@@ -2,6 +2,8 @@
 <html>
 	<head>
 		<!-- <link rel="stylesheet" type="text/css" media='all' href="CSS/index.css"> -->
+		<link rel="shortcut icon" href='http://104.36.83.116/favicon.ico' type="image/x-icon">
+		<link rel="icon" href="http://104.36.83.116/favicon.ico" type="image/x-icon">
 		<title>Chat</title>
 		<Style>
 		* { 
@@ -155,6 +157,7 @@ form button {
 
 		function disable_notif() {
 			blur = false
+			$(document).attr("title", 'chat');
 		}
 
 		function PlaySound(soundObj) {
