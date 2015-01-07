@@ -57,17 +57,17 @@ form button {
 .friends {
 	position: fixed;
 	z-index: 2;
-	right: 80px;
-	top: 35px;
+	right: 4%; /*80px;*/
+	top: 4%;
 	font-size: 20px;
 	border-radius: 10px;
 	border: black solid 2px;
-	width: 380px;
+	width: 20%;
 	height: 90%;
-	padding-top: 10px;
-	padding-left: 40px;
-	padding-right: 40px;
-	padding-bottom: 60px;
+	padding-top: 1%;
+	padding-left: .5%;
+	padding-right: .5%;
+	padding-bottom: 5%;
 	text-align: center;
 	list-style-type: none;
 	text-align: center;
@@ -87,7 +87,7 @@ form button {
 #messages { 
 	clear: both;
 	list-style-type: none; 
-	margin: 10px; 
+	margin: .1%; 
 	margin-top: 3%;
 	margin-bottom: 5%;
 	padding: 0;
@@ -121,6 +121,7 @@ form button {
     	<form action=''>
     		<input id='m' autocomplete = 'off' autofocus /><button>Send</button>
 		</form>
+
 	<script src="/socket.io/socket.io.js"></script>
 	<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 	<script>
@@ -131,12 +132,39 @@ form button {
 		socket.emit('connected', [user, '>>> ' + user + ' has connected']);
 		user = user + ": ";
 
-		function pageScroll() {
+		function pageScroll() { 
 		    window.scrollBy(0,35);
-		
+		}
+		// function notFocus() {
+
+		//   if ($(document.activeElement).attr("type") == "text" || $(document.activeElement).attr("type") == "textarea") {
+		//   return false;
+		//  } else {
+		//  	return true;
+		//  }
+		// }
+
+
+		var blur;
+		window.onblur = notification;
+		window.onfocus = disable_notif;
+
+		function notification() {
+			blur = true;
 		}
 
+		function disable_notif() {
+			blur = false
+		}
 
+		function PlaySound(soundObj) {
+		  var sound = document.getElementById(soundObj);
+		  sound.play();
+		}
+		</script>
+		<audio id='sound1' src="http://themushroomkingdom.net/sounds/wav/smw/smw_coin.wav" preload='auto' autostart="false" width="0" height="0"
+		enablejavascript="true"></audio>
+		<script>
 		// var searchTimeout;
 		// document.getElementById('form').onkeypress = function () {
 	 //        if (searchTimeout != undefined) clearTimeout(searchTimeout);
@@ -154,15 +182,31 @@ form button {
 		socket.on('chat message', function(msg){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();
+			if (blur) {//user is in a different tab
+				console.log('user not paying attention');
+				PlaySound('sound1');
+				$(document).attr("title", '(1) chat');
+
+			}
 		});	
 		socket.on('connected', function(msg){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();
+			if (blur) {//user is in a different tab
+				console.log('user not paying attention');
+				PlaySound('sound1');
+				$(document).attr("title", '(1) chat');
+			}
 		});
 
 		socket.on('disconnect', function(msg){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();
+			if (blur) {//user is in a different tab
+				console.log('user not paying attention');
+				PlaySound('sound1');
+				$(document).attr("title", '(1) chat');
+			}
 		})
 	</script>
 	</body>
