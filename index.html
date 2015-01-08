@@ -56,7 +56,7 @@ form button {
 	text-align: center;
 }
 
-.friends {
+#friends {
 	position: fixed;
 	z-index: 2;
 	right: 4%; /*80px;*/
@@ -76,14 +76,18 @@ form button {
 	background-color: #B8DBFF;
 }
 
-.friends li {
-	font-size: 16px;
-	padding: 5px;
-	font-weight: none;
-	background: #B8DBFF;
+#friends li {
+	background:: #B8DBFF;
 }
 
-.friends h3 {
+#online_friends li {
+	font-size: 18px;
+	padding: 5px;
+	font-weight: none;
+	background-color: #B8DBFF;
+}
+
+#friends h3 {
 	background: #B8DBFF;
 }
 #messages { 
@@ -114,9 +118,11 @@ form button {
     		<h1>Rohan's Amazing Chat Room!</h1>
     		
     	</div>
-		<div class='friends'>
-			<h3>Friends Online<h3>
-			<li>You should try making some friends</li>
+		<div id='friends'>
+			<h3>Friends Online</h3>
+			<div id= 'online_friends'>
+				<li> You should make some friends </li>
+			</div>
 		</div>
 
     	<ul id='messages'></ul>
@@ -128,9 +134,8 @@ form button {
 	<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 	<script>
 		var user = prompt("please enter name:");
+		var username = user;
 		var socket = io();
-		index = 0;
-		// document.cookie = index;
 		socket.emit('connected', [user, '>>> ' + user + ' has connected']);
 		user = user + ": ";
 
@@ -176,7 +181,6 @@ form button {
   //   	function callServerScript() {
   //   		socket.emit()
   //   	}
-
 		$('form').submit(function(){
 			socket.emit('chat message', user + $('#m').val());
 			$('#m').val('');
@@ -192,9 +196,20 @@ form button {
 
 			}
 		});	
-		socket.on('connected', function(msg){
+		socket.on('connected', function(msg, all_users){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();
+			var index = all_users.indexOf(username);
+			all_users.splice(index, 1);
+			if (all_users.length > 0) {
+				var list = '';
+				all_users.forEach(function (element) {
+					list = list + '<li>' + element + '</li>'; 
+				})
+				document.getElementById('online_friends').innerHTML = list;
+			}
+
+
 			if (blur) {//user is in a different tab
 				console.log('user not paying attention');
 				PlaySound('sound1');
@@ -202,9 +217,22 @@ form button {
 			}
 		});
 
-		socket.on('disconnect', function(msg){
+		socket.on('disconnect', function(msg, all_users){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();
+			var index = all_users.indexOf(username);
+			all_users.splice(index, 1);
+			console.log(all_users)
+			if (all_users.length > 0) {
+			var list = '';
+				all_users.forEach(function (element) {
+					list = list + '<li>' + element + '</li>'; 
+				})
+				document.getElementById('online_friends').innerHTML = list;
+			} else {
+				document.getElementById('online_friends').innerHTML = '<li> You should make some friends </li>';
+			}
+
 			if (blur) {//user is in a different tab
 				console.log('user not paying attention');
 				PlaySound('sound1');
