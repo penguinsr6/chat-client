@@ -173,9 +173,9 @@ form button {
 
     	<ul id='messages'></ul>
     	
-    	<form action=''>
+    	<form action='' name = "Form">
     		<li id='typing'></li>
-    		<input id='m' autocomplete = 'off' autofocus /><button>Send</button>
+    		<input id='m' name = 'm' autocomplete = 'off' autofocus /><button>Send</button>
 		</form>
 		
 
@@ -223,24 +223,33 @@ form button {
   //   	function callServerScript() {
   //   		socket.emit()
   //   	}
-  		
+  		var typed = false;
   		//user is typing function
   		$('#m').keypress(function () {
-
+  			typed = true;
   			console.log('typing');
   			// if (timeout === false) {
+			// console.log('text length', $('#m').val() === '');
 				socket.emit('typing', username);
   			// }
   			
-  			// timeout 
+  	  		})
 
-  			
-  		})
+  		
+  		var form_text = document.forms["Form"]["m"].value;
+  		console.log('form text', form_text);
+		if (typed) {
+			if (form_text == null || form_text == ""){
+			console.log('user has deleted text');
+			socket.emit('typing_remove', username);
+			typed === false;
+			}
+		}
 
 		//emits the chat message typed to all the other sockets and clears the text box
 		$('form').submit(function(){
 			socket.emit('chat message', user + $('#m').val());
-			socket.emit('typing_remove', username) //remove person from typing list
+			socket.emit('typing_remove', username); //remove person from typing list
 			//set timeout variable back to 0
 
 
@@ -250,6 +259,16 @@ form button {
 		});
 		//on recieving a chat message event, appends message
 		socket.on('typing', function(users_typing){
+
+			//removing user from users typing, so that they dont see the message for themselves
+			var index_tmp = users_typing.indexOf(username);
+			if (index_tmp >= 0) {
+				console.log('removing current user', username);
+				users_typing.splice(index_tmp, 1);
+				console.log('removed', users_typing);
+			}
+
+
 			console.log('going to print', users_typing);
 			if (users_typing.length === 0){
 				var typing_txt = '';
