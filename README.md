@@ -8,7 +8,7 @@ Current Features
 -Displays all users on public chat
 -Has sound notifications if user is on another tab when messaged
 -User is typing feature
+-User has entered text feature
 
 Features in progress
--Differentiate between user is typing, and user has text entered
 -Private messaging between members in chat room
