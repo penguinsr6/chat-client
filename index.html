@@ -207,12 +207,12 @@ form button {
 		}
 
 		var blur;	//determines whether user is looking at screen for notifications
-		window.onblur = notification;
+		window.onblur = blur_true;
 		window.onfocus = disable_notif;
 
 
 
-		function notification() {
+		function blur_true() {
 			blur = true;
 		}
 
@@ -229,39 +229,18 @@ form button {
 		<audio id='sound1' src="http://themushroomkingdom.net/sounds/wav/smw/smw_coin.wav" preload='auto' autostart="false" width="0" height="0"
 		enablejavascript="true"></audio>
 		<script>
-		// var searchTimeout;
-		// document.getElementById('form').onkeypress = function () {
-	 //        if (searchTimeout != undefined) clearTimeout(searchTimeout);
-	 //        searchTimeout = setTimeout(callServerScript, 250);
-  //   	};
-  //   	function callServerScript() {
-  //   		socket.emit()
-  //   	}
 
-  		//creating time out function for differentiating between typing and text entered
-
-
-
-  		var typed = false;
   		var searchTimeout;
-  		var searchTimeout2;
-  		var type_num = 0;
-  		//user is typing function
 
+  		//user is typing and text entered function trigger
   		$('#m').keypress(function () {
-  			typed = true;
-  			type_num++;
-  			temp_num = type_num;
-  			// console.log('typing');
 			socket.emit('typing', username);
 			socket.emit('text_entered_remove', username);
 
 			if (searchTimeout != undefined) clearTimeout(searchTimeout);
 			searchTimeout = setTimeout(function(){
 				var form_text = document.forms["Form"]["m"].value;
-				// console.log('value of from', form_text);
 				if (!(form_text == null || form_text == "")){
-					// console.log('emiting text entered');
 					socket.emit('text_entered', username);
 					socket.emit('typing_remove', username);
 				}
@@ -269,164 +248,100 @@ form button {
 			}, 2000);
   			
   		});
-
+  		//checking if text is empty (user deletes text after typing) and resets
   		setInterval(function(){
 					var form_text = document.forms["Form"]["m"].value;
 					if (form_text == null || form_text == ""){
 						console.log('no text entered', form_text)
-					// console.log('emiting text entered');
 						socket.emit('typing_remove', username);
 						socket.emit('text_entered_remove', username);
 				}
 				}, 1000)
 
-  		
-  		// var form_text = document.forms["Form"]["m"].value;
-  		// console.log('form text', form_text);
-		// if (typed) {
-		// 	if (form_text == null || form_text == ""){
-		// 	console.log('user has deleted text');
-		// 	socket.emit('typing_remove', username);
-		// 	typed === false;
-		// 	}
-		// }
+  		function notification(){
+			if (blur) {//user is in a different tab
+				PlaySound('sound1');
+				$(document).attr("title", '(1) chat');
+			}
+  		}
+
+  		function generate_friends(all_users){
+  			//removes user from list of all users so their own name doesn't appear on friends list
+  			var index = all_users.indexOf(username);
+			all_users.splice(index, 1);
+
+  			if (all_users.length > 0) {
+				var list = '';
+				all_users.forEach(function (element) {
+					list = list + '<button type="button" class="btn btn-default">' + element + '</button>'; 
+				})
+				txt ='<div class="btn-group-vertical" role="group" aria-label="...">' + list + '</div>'
+			} else {
+			//no one is in chat so friends list is reset to original message
+				txt = '<li> You should make some friends </li>';
+			}
+			document.getElementById('online_friends').innerHTML = txt;
+  		}
+
+  		function generate_typing_status(element, list, text, text1){
+			//removing user from users typing, so that they dont see the message for themselves
+			var index_tmp = list.indexOf(username);
+			if (index_tmp >= 0) {
+				list.splice(index_tmp, 1);
+			}
+			var txt = '';
+			if (list.length === 1) {
+				var txt = list[0] + text;
+			} else if (list.length > 1) {
+				for (var i = 0; i < list.length - 1; i++) {
+					txt = txt + list[i] + ', ';
+				};
+				if (list.length === 2) {
+					txt = txt.substring(0, txt.length - 2);
+					txt = txt + ' and ' + list[list.length - 1] + text1;
+				} else {
+				txt = txt + ' and ' + list[list.length - 1] + text1;
+				}
+				
+			}
+			document.getElementById(element).innerHTML  = txt;
+  		}
+
 
 		//emits the chat message typed to all the other sockets and clears the text box
 		$('form').submit(function(){
 			socket.emit('chat message', user + $('#m').val());
 			socket.emit('typing_remove', username); //remove person from typing list
-			//set timeout variable back to 0
-
-
 			$('#m').val(''); //clear text box
-
 			return false;
 		});
 		
-		socket.on('text_entered', function(users_text_enter){
-
-			//removing user from users typing, so that they dont see the message for themselves
-			var index_tmp = users_text_enter.indexOf(username);
-			if (index_tmp >= 0) {
-				users_text_enter.splice(index_tmp, 1);
-			}
-
-
-			if (users_text_enter.length === 0){
-				var typing_txt = '';
-				document.getElementById('text_entered').innerHTML  = typing_txt;
-			} else if (users_text_enter.length === 1) {
-
-				var typing_txt = users_text_enter[0] + ' has text entered';
-				document.getElementById('text_entered').innerHTML  = typing_txt;
-			} else {
-				var typing_txt = '';
-
-				for (var i = 0; i < users_text_enter.length - 1; i++) {
-					typing_txt = typing_txt + users_text_enter[i] + ', ';
-				};
-				if (users_text_enter.length === 2) {
-					typing_txt = typing_txt.substring(0, typing_txt.length - 2);
-					typing_txt = typing_txt + ' and ' + users_text_enter[users_text_enter.length - 1] + ' have text entered';
-				} else {
-				typing_txt = typing_txt + ' and ' + users_text_enter[users_text_enter.length - 1] + ' have text entered';
-				}
-				document.getElementById('text_entered').innerHTML  = typing_txt;
-			}
-			
+		//when a user stops typing but has text entered
+		socket.on('text_entered', function(users_text_enter, users_typing){
+			generate_typing_status('typing', users_typing, ' is typing', ' are typing');
+			generate_typing_status('text_entered', users_text_enter, ' has entered text', ' have entered text');
 		});
+
+		//when a user is typing
 		socket.on('typing', function(users_typing){
-
-			//removing user from users typing, so that they dont see the message for themselves
-			var index_tmp = users_typing.indexOf(username);
-			if (index_tmp >= 0) {
-				users_typing.splice(index_tmp, 1);
-			}
-
-
-			if (users_typing.length === 0){
-				var typing_txt = '';
-				document.getElementById('typing').innerHTML  = typing_txt;
-			} else if (users_typing.length === 1) {
-
-				var typing_txt = users_typing[0] + ' is typing';
-				document.getElementById('typing').innerHTML  = typing_txt;
-			} else {
-				var typing_txt = '';
-
-				for (var i = 0; i < users_typing.length - 1; i++) {
-					typing_txt = typing_txt + users_typing[i] + ', ';
-				};
-				if (users_typing.length === 2) {
-					typing_txt = typing_txt.substring(0, typing_txt.length - 2);
-					typing_txt = typing_txt + ' and ' + users_typing[users_typing.length - 1] + ' are typing';
-				} else {
-				typing_txt = typing_txt + ' and ' + users_typing[users_typing.length - 1] + ' are typing';
-				}
-				document.getElementById('typing').innerHTML  = typing_txt;
-			}
-			
+			generate_typing_status('typing', users_typing, ' is typing', ' are typing');	
 		});
+
 		//on recieving a chat message event, appends message
 		socket.on('chat message', function(msg){
 			$('#messages').append($('<li>').text(msg));
-			pageScroll();	//scrolls page with each message
-
-			if (blur) {//checks if user is in a different tab
-				PlaySound('sound1');
-				$(document).attr("title", '(1) chat');
-			}
+			pageScroll();
+			notification();
 		});	
-		//for displaying message when a user joins the room
-		socket.on('connected', function(msg, all_users){
+
+		//for displaying message when a user joins or leaves the room
+		socket.on('connect and disconnect', function(msg, all_users){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();
-			//removes user from list of all users so their own name doesn't appear on friends list
-			var index = all_users.indexOf(username);
-			all_users.splice(index, 1);
-			//creating html code to display friends
-			if (all_users.length > 0) {
-				var list = '';
-				all_users.forEach(function (element) {
-					list = list + '<button type="button" class="btn btn-default">' + element + '</button>'; 
-				})
-
-				list ='<div class="btn-group-vertical" role="group" aria-label="...">' + list + '</div>'
-				document.getElementById('online_friends').innerHTML = list;
-			}
-
-
-			if (blur) {//user is in a different tab
-				PlaySound('sound1');
-				$(document).attr("title", '(1) chat');
-			}
+			generate_friends(all_users);
+			notification();
 		});
-		//display message when a user disconnects
-		socket.on('disconnect', function(msg, all_users){
-			$('#messages').append($('<li>').text(msg));
-			pageScroll();
-			//removing user from list of all users so they don't appear on their own friends list
-			var index = all_users.indexOf(username);
-			all_users.splice(index, 1);
 
-			if (all_users.length > 0) {
-			var list = '';
-				all_users.forEach(function (element) {
-					list = list + '<button type="button" class="btn btn-default">' + element + '</button>'; 
-				})
-				
-				list ='<div class="btn-group-vertical" role="group" aria-label="...">' + list + '</div>'
-				document.getElementById('online_friends').innerHTML = list;
-
-			} else {//no one is in chat so friends list is reset to original message
-				document.getElementById('online_friends').innerHTML = '<li> You should make some friends </li>';
-			}
-
-			if (blur) {//user is in a different tab
-				PlaySound('sound1');
-				$(document).attr("title", '(1) chat');
-			}
-		})
 	</script>
 	</body>
 </html>
