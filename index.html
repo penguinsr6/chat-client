@@ -42,13 +42,26 @@ form button {
 	border: none; 
 	padding: 10px; 
 }
+
 #typing {
 	bottom: 5.6%;
 	font-size: 16px;
 	margin-left: 15px;
+	z-index: 4;
 	list-style-type: none;
 	position: fixed;
 	width: 20%;
+}
+
+#text_entered {
+	bottom: 5.6%;
+	right: 25%;
+	font-size: 16px;
+	margin: auto;
+	list-style-type: none;
+	position: fixed;
+	text-align: right;
+	width: 80%;
 }
 
 #header {
@@ -175,6 +188,7 @@ form button {
     	
     	<form action='' name = "Form">
     		<li id='typing'></li>
+    		<li id='text_entered'></li>
     		<input id='m' name = 'm' autocomplete = 'off' autofocus /><button>Send</button>
 		</form>
 		
@@ -223,28 +237,47 @@ form button {
   //   	function callServerScript() {
   //   		socket.emit()
   //   	}
+
+  		//creating time out function for differentiating between typing and text entered
+
+
+
   		var typed = false;
+  		var searchTimeout;
+  		var type_num = 0;
   		//user is typing function
+
   		$('#m').keypress(function () {
   			typed = true;
-  			console.log('typing');
-  			// if (timeout === false) {
-			// console.log('text length', $('#m').val() === '');
-				socket.emit('typing', username);
-  			// }
+  			type_num++;
+  			temp_num = type_num;
+  			// console.log('typing');
+			socket.emit('typing', username);
+			socket.emit('text_entered_remove', username);
+
+			if (searchTimeout != undefined) clearTimeout(searchTimeout);
+			searchTimeout = setTimeout(function(){
+				var form_text = document.forms["Form"]["m"].value;
+				// console.log('value of from', form_text);
+				if (!(form_text == null || form_text == "")){
+					// console.log('emiting text entered');
+					socket.emit('text_entered', username);
+					socket.emit('typing_remove', username);
+				}
+			}, 2000);
   			
-  	  		})
+  		});
 
   		
-  		var form_text = document.forms["Form"]["m"].value;
-  		console.log('form text', form_text);
-		if (typed) {
-			if (form_text == null || form_text == ""){
-			console.log('user has deleted text');
-			socket.emit('typing_remove', username);
-			typed === false;
-			}
-		}
+  		// var form_text = document.forms["Form"]["m"].value;
+  		// console.log('form text', form_text);
+		// if (typed) {
+		// 	if (form_text == null || form_text == ""){
+		// 	console.log('user has deleted text');
+		// 	socket.emit('typing_remove', username);
+		// 	typed === false;
+		// 	}
+		// }
 
 		//emits the chat message typed to all the other sockets and clears the text box
 		$('form').submit(function(){
@@ -257,25 +290,53 @@ form button {
 
 			return false;
 		});
-		//on recieving a chat message event, appends message
+		
+		socket.on('text_entered', function(users_text_enter){
+
+			//removing user from users typing, so that they dont see the message for themselves
+			var index_tmp = users_text_enter.indexOf(username);
+			if (index_tmp >= 0) {
+				users_text_enter.splice(index_tmp, 1);
+			}
+
+
+			if (users_text_enter.length === 0){
+				var typing_txt = '';
+				document.getElementById('text_entered').innerHTML  = typing_txt;
+			} else if (users_text_enter.length === 1) {
+
+				var typing_txt = users_text_enter[0] + ' has text entered';
+				document.getElementById('text_entered').innerHTML  = typing_txt;
+			} else {
+				var typing_txt = '';
+
+				for (var i = 0; i < users_text_enter.length - 1; i++) {
+					typing_txt = typing_txt + users_text_enter[i] + ', ';
+				};
+				if (users_text_enter.length === 2) {
+					typing_txt = typing_txt.substring(0, typing_txt.length - 2);
+					typing_txt = typing_txt + ' and ' + users_text_enter[users_text_enter.length - 1] + ' have text entered';
+				} else {
+				typing_txt = typing_txt + ' and ' + users_text_enter[users_text_enter.length - 1] + ' have text entered';
+				}
+				document.getElementById('text_entered').innerHTML  = typing_txt;
+			}
+			
+		});
 		socket.on('typing', function(users_typing){
 
 			//removing user from users typing, so that they dont see the message for themselves
 			var index_tmp = users_typing.indexOf(username);
 			if (index_tmp >= 0) {
-				console.log('removing current user', username);
 				users_typing.splice(index_tmp, 1);
-				console.log('removed', users_typing);
 			}
 
 
-			console.log('going to print', users_typing);
 			if (users_typing.length === 0){
 				var typing_txt = '';
 				document.getElementById('typing').innerHTML  = typing_txt;
 			} else if (users_typing.length === 1) {
 
-				console.log('adding for one person');
 				var typing_txt = users_typing[0] + ' is typing';
 				document.getElementById('typing').innerHTML  = typing_txt;
 			} else {
@@ -283,22 +344,18 @@ form button {
 
 				for (var i = 0; i < users_typing.length - 1; i++) {
 					typing_txt = typing_txt + users_typing[i] + ', ';
-					console.log('part 1', typing_txt);
 				};
 				if (users_typing.length === 2) {
-					console.log('part 2-1', typing_txt);
-					console.log('lenght', typing_txt.length)
 					typing_txt = typing_txt.substring(0, typing_txt.length - 2);
-					console.log('part 2-1-1', typing_txt);
 					typing_txt = typing_txt + ' and ' + users_typing[users_typing.length - 1] + ' are typing';
 				} else {
 				typing_txt = typing_txt + ' and ' + users_typing[users_typing.length - 1] + ' are typing';
-				console.log('part 2', typing_txt);
 				}
 				document.getElementById('typing').innerHTML  = typing_txt;
 			}
 			
-		})
+		});
+		//on recieving a chat message event, appends message
 		socket.on('chat message', function(msg){
 			$('#messages').append($('<li>').text(msg));
 			pageScroll();	//scrolls page with each message
