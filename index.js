@@ -17,6 +17,14 @@ app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/index.html');
 });
 
+app.get('/*.js', function(req, res) {
+    res.sendFile(__dirname + req.url);
+});
+
+app.get('/*.css', function(req, res) {
+    res.sendFile(__dirname + req.url);
+});
+
 io.on('connection', function(socket){
 	socket.on('chat message', function(msg){
 		io.emit('chat message', msg);
